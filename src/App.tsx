@@ -1,10 +1,11 @@
 import './App.css'
+import { Button } from './components/ui/button'
 
 function App() {
 
   return (
     <main className="">
-      <h2>hello</h2>
+      <Button>Save</Button>
     </main>
   )
 }
