@@ -1,12 +1,7 @@
-import "./App.css"
-import { Button } from "./components/ui/button"
+import { OrderExplorer } from "./features/orders/order-explorer"
 
 function App() {
-  return (
-    <main className="">
-      <Button>Save</Button>
-    </main>
-  )
+  return <OrderExplorer />
 }
 
 export default App
