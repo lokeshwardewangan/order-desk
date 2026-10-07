@@ -1,0 +1,5 @@
+{
+  "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": ["oxlint --fix", "prettier --write"],
+  "*.{json,jsonc,css,scss,html,md,mdx,yml,yaml}": "prettier --write",
+  ".{prettierrc,lintstagedrc}": "prettier --write --parser json"
+}

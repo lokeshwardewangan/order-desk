@@ -30,3 +30,14 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## Formatting and pre-commit checks
+
+Install dependencies with `bun install`; the `prepare` script installs Husky hooks.
+
+- `bun run format` formats the project and sorts Tailwind classes.
+- `bun run format:check` checks formatting without changing files.
+- `bun run lint` runs Oxlint across the project.
+- `bun run lint:staged` checks files currently staged in Git.
+
+The pre-commit hook runs lint-staged using `.lintstagedrc`. Staged JavaScript and TypeScript files run through Oxlint with safe fixes, then Prettier. Supported styles, documents, and configuration files run through Prettier. Prettier uses `src/index.css` for Tailwind v4 and sorts classes in `cn` and `cva` calls. Builds remain a separate check: `bun run build`.
