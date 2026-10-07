@@ -31,8 +31,6 @@ export interface OrderTimelineEvent {
   status: "placed" | OrderStatus
   occurredAt: string
 }
-
-// The list API will return summaries without the heavier detail fields.
 export interface OrderSummary {
   id: string
   customer: Customer

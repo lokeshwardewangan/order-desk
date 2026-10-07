@@ -9,7 +9,6 @@ import type {
 
 export const ORDER_COUNT = 10_000
 export const DATASET_SEED = 42
-// Fixed to keep refreshes, tests, and shared links on the same dataset.
 export const DATASET_REFERENCE_DATE = "2026-10-07T12:00:00.000Z"
 
 const HOUR = 60 * 60 * 1_000
@@ -86,8 +85,6 @@ const products = [
   { sku: "SKU-011", name: "Portable monitor", unitPricePaise: 1_499_900 },
   { sku: "SKU-012", name: "Wireless mouse", unitPricePaise: 99_900 },
 ]
-
-// Mulberry32 provides repeatable demo data; this is not a security primitive.
 function createRandom(seed: number) {
   let state = seed >>> 0
   return () => {
@@ -205,6 +202,4 @@ export function generateOrders(
     }
   })
 }
-
-// Keep this in the mock API layer; UI components should request paginated summaries.
 export const orders = generateOrders()
