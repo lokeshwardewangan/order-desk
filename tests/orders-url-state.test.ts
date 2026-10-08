@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { parseOrderQuery } from "../src/features/orders/query"
+import { parseOrderQuery } from "../src/features/orders/schemas/order-query.schema"
 import {
   orderListSearchParams,
   orderViewSearchParams,
   orderViewUrl,
   readOrderViewState,
   updateOrderViewState,
-} from "../src/features/orders/url-state"
+} from "../src/features/orders/utils/order-url"
 
 const detailedView =
   "q=Rahul&status=shipped&from=2026-10-01&to=2026-10-07&minAmountPaise=0&maxAmountPaise=3000000&sort=amount-desc&page=3&pageSize=50&order=ORD-01042&scroll=840"

@@ -1,16 +1,9 @@
-export const ORDER_STATUSES = [
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-] as const
-
+import type { z } from "zod"
+import type { orderSummarySchema } from "./schemas/order-response.schema"
+import type { ORDER_STATUSES } from "./order.constants"
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-export interface Customer {
-  name: string
-  email: string
-}
+export type Customer = OrderSummary["customer"]
 
 export interface OrderItem {
   sku: string
@@ -31,15 +24,7 @@ export interface OrderTimelineEvent {
   status: "placed" | OrderStatus
   occurredAt: string
 }
-export interface OrderSummary {
-  id: string
-  customer: Customer
-  placedAt: string
-  status: OrderStatus
-  currency: "INR"
-  totalAmountPaise: number
-  itemCount: number
-}
+export type OrderSummary = z.infer<typeof orderSummarySchema>
 
 export interface Order extends OrderSummary {
   items: OrderItem[]

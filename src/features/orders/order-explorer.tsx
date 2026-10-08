@@ -1,8 +1,6 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { fetchOrders } from "./api"
-import { useOrderView } from "./use-order-view"
-import { orderListSearchParams } from "./url-state"
+import { useOrders } from "./hooks/use-orders"
+import { useOrderView } from "./hooks/use-order-view"
 import { Box, Eye, Link } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,11 +10,7 @@ import { OrdersTable } from "./components/orders-table"
 export function OrderExplorer() {
   const { state, update } = useOrderView()
   const [copyStatus, setCopyStatus] = useState("")
-  const query = useQuery({
-    queryKey: ["orders", orderListSearchParams(state).toString()],
-    queryFn: ({ signal }) => fetchOrders(state, signal),
-    retry: false,
-  })
+  const query = useOrders(state)
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href)
@@ -85,11 +79,7 @@ export function OrderExplorer() {
           {copyStatus}
         </p>
         <div className="overflow-hidden rounded-xl border bg-background shadow-xs">
-          <OrderFilters
-            key={orderListSearchParams(state).toString()}
-            state={state}
-            onChange={update}
-          />
+          <OrderFilters state={state} onChange={update} />
           <section
             aria-label="Order request status"
             aria-busy={query.isFetching}

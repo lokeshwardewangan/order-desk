@@ -4,8 +4,8 @@ import {
   orderViewSearchParams,
   readOrderViewState,
   updateOrderViewState,
-} from "./url-state"
-import type { OrderViewState } from "./url-state"
+} from "../utils/order-url"
+import type { OrderViewState } from "../utils/order-url"
 
 export function useOrderView() {
   const [params, setParams] = useSearchParams()

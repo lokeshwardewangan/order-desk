@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom"
 import { setupServer } from "msw/node"
 import { http, HttpResponse } from "msw"
-import { createOrderHandlers } from "../src/mocks/handlers"
+import { createOrderHandlers } from "../src/mocks/orders/handlers"
 import { OrderExplorer } from "../src/features/orders/order-explorer"
 const server = setupServer(
   ...createOrderHandlers({ random: () => 0.5, wait: async () => {} }),
@@ -122,4 +122,18 @@ test("clear all also clears unapplied edits", async () => {
   await user.type(screen.getByLabelText("Search orders"), "unsaved search")
   await user.click(screen.getByRole("button", { name: "Clear all" }))
   expect(screen.getByLabelText("Search orders")).toHaveValue("")
+})
+
+test("applying filters preserves the search input and its focus", async () => {
+  const user = userEvent.setup()
+  mount()
+  const input = screen.getByLabelText("Search orders")
+  await user.type(input, "ORD-00001{Enter}")
+  await waitFor(() =>
+    expect(screen.getByLabelText("Current URL")).toHaveTextContent(
+      "q=ORD-00001",
+    ),
+  )
+  expect(screen.getByLabelText("Search orders")).toBe(input)
+  expect(input).toHaveFocus()
 })

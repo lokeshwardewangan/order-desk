@@ -1,41 +1,11 @@
-import { useState } from "react"
-import { SAMPLE_LAST_DATE, SAMPLE_WEEK_START } from "../sample-period"
-import type { ChangeEvent, FormEvent } from "react"
-import type { OrderViewState } from "../url-state"
-import { InvalidOrderQuery, parseOrderQuery } from "../query"
-import { orderListSearchParams } from "../url-state"
 import { Search, SlidersHorizontal, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-
-type FilterKey =
-  "q" | "status" | "from" | "to" | "minAmountPaise" | "maxAmountPaise"
-const keys: FilterKey[] = [
-  "q",
-  "status",
-  "from",
-  "to",
-  "minAmountPaise",
-  "maxAmountPaise",
-]
-function draftFrom(state: OrderViewState) {
-  return {
-    q: state.q,
-    status: state.status ?? "all",
-    from: state.from ?? "",
-    to: state.to ?? "",
-    minAmountPaise:
-      state.minAmountPaise === undefined
-        ? ""
-        : String(state.minAmountPaise / 100),
-    maxAmountPaise:
-      state.maxAmountPaise === undefined
-        ? ""
-        : String(state.maxAmountPaise / 100),
-  }
-}
+import type { OrderViewState } from "../utils/order-url"
+import { useOrderFilters } from "../hooks/use-order-filters"
+import { ORDER_PRESETS } from "../order-presets"
 export function OrderFilters({
   state,
   onChange,
@@ -43,82 +13,10 @@ export function OrderFilters({
   state: OrderViewState
   onChange: (changes: Partial<OrderViewState>) => void
 }) {
-  const [draft, setDraft] = useState(() => draftFrom(state))
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const activeFilters = keys
-    .filter((key) => state[key] !== undefined && state[key] !== "")
-    .map((key) => ({
-      id: key,
-      label:
-        key === "minAmountPaise"
-          ? "Min ₹" + Number(state[key]) / 100
-          : key === "maxAmountPaise"
-            ? "Max ₹" + Number(state[key]) / 100
-            : key + ": " + state[key],
-    }))
-  function field(key: FilterKey) {
-    return {
-      value: draft[key],
-      onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-        setDraft({ ...draft, [key]: event.target.value }),
-      "aria-invalid": Boolean(errors[key]),
-      "aria-describedby": errors[key] ? "error-" + key : undefined,
-    }
-  }
-  function apply(event: FormEvent) {
-    event.preventDefault()
-    const params = orderListSearchParams(state)
-    const nextErrors: Record<string, string> = {}
-    for (const key of keys) {
-      let value = draft[key].trim()
-      if (key === "minAmountPaise" || key === "maxAmountPaise") {
-        if (value && !/^\d+(\.\d{1,2})?$/.test(value))
-          nextErrors[key] =
-            "Enter a positive amount with up to two decimal places"
-        else if (value) {
-          const [whole, decimal = ""] = value.split(".")
-          value = String(Number(whole) * 100 + Number(decimal.padEnd(2, "0")))
-        }
-      }
-      if (value) params.set(key, value)
-      else params.delete(key)
-    }
-    try {
-      const query = parseOrderQuery(params)
-      if (Object.keys(nextErrors).length)
-        throw new InvalidOrderQuery(nextErrors)
-      setErrors({})
-      onChange(query)
-    } catch (error) {
-      if (!(error instanceof InvalidOrderQuery)) throw error
-      setErrors({ ...nextErrors, ...error.fields })
-      const ids: Record<string, string> = {
-        minAmountPaise: "order-min",
-        maxAmountPaise: "order-max",
-      }
-      document
-        .getElementById(
-          ids[Object.keys({ ...nextErrors, ...error.fields })[0]] ??
-            "order-" + Object.keys(error.fields)[0],
-        )
-        ?.focus()
-    }
-  }
-  function preset(index: number) {
-    const changes: Partial<OrderViewState> = {
-      q: "",
-      status:
-        index === 1 ? "processing" : index === 3 ? "cancelled" : undefined,
-      from: index === 3 ? SAMPLE_WEEK_START : undefined,
-      to: index === 3 ? SAMPLE_LAST_DATE : undefined,
-      minAmountPaise: index === 2 ? 1_000_000 : undefined,
-      maxAmountPaise: undefined,
-      sort: index === 2 ? "amount-desc" : "date-desc",
-    }
-    setDraft(draftFrom({ ...state, ...changes }))
-    setErrors({})
-    onChange(changes)
-  }
+  const { field, apply, preset, errors, activeFilters } = useOrderFilters(
+    state,
+    onChange,
+  )
   return (
     <form
       onSubmit={apply}
@@ -131,18 +29,16 @@ export function OrderFilters({
         aria-label="Order views"
         className="mb-6 flex flex-wrap gap-2"
       >
-        {["All orders", "Processing", "High value", "Recent cancellations"].map(
-          (view, index) => (
-            <Button
-              key={view}
-              type="button"
-              variant="outline"
-              onClick={() => preset(index)}
-            >
-              {view}
-            </Button>
-          ),
-        )}
+        {ORDER_PRESETS.map((view) => (
+          <Button
+            key={view.id}
+            type="button"
+            variant="outline"
+            onClick={() => preset(view)}
+          >
+            {view.label}
+          </Button>
+        ))}
       </div>
       <div className="mb-5 space-y-2">
         <Label htmlFor="order-search">Search orders</Label>
@@ -255,7 +151,7 @@ export function OrderFilters({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => preset(0)}
+          onClick={() => preset(ORDER_PRESETS[0])}
         >
           Clear all
         </Button>

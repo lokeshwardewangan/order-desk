@@ -10,8 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { OrderListResponse, OrderSort } from "../api-types"
-import type { OrderStatus, OrderSummary } from "../types"
+import type { OrderListResponse, OrderSort } from "../order-api.types"
+import type { OrderStatus, OrderSummary } from "../order.types"
 
 const statusLabels: Record<OrderStatus, string> = {
   processing: "Processing",

@@ -1,7 +1,11 @@
 import { delay, http, HttpResponse } from "msw"
-import { orders } from "../features/orders/data"
-import type { ApiErrorResponse } from "../features/orders/api-types"
-import { InvalidOrderQuery, parseOrderQuery, queryOrders } from "./orders-query"
+import { orders } from "./data"
+import type { ApiErrorResponse } from "../../features/orders/order-api.types"
+import {
+  InvalidOrderQuery,
+  parseOrderQuery,
+} from "../../features/orders/schemas/order-query.schema"
+import { queryOrders } from "./query-orders"
 
 export const MIN_LATENCY_MS = 200
 export const MAX_LATENCY_MS = 3_000

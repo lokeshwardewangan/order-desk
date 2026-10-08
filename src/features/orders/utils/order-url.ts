@@ -1,6 +1,9 @@
-import { DEFAULT_PAGE_SIZE } from "./api-types"
-import type { OrderListQuery } from "./api-types"
-import { InvalidOrderQuery, parseOrderQuery } from "./query"
+import { DEFAULT_PAGE_SIZE } from "../order.constants"
+import type { OrderListQuery } from "../order-api.types"
+import {
+  InvalidOrderQuery,
+  parseOrderQuery,
+} from "../schemas/order-query.schema"
 
 export interface OrderViewState extends OrderListQuery {
   order?: string

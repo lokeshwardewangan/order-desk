@@ -5,8 +5,8 @@ import {
   generateOrders,
   ORDER_COUNT,
   orders,
-} from "../src/features/orders/data"
-import { ORDER_STATUSES } from "../src/features/orders/types"
+} from "../src/mocks/orders/data"
+import { ORDER_STATUSES } from "../src/features/orders/order.constants"
 
 assert.equal(orders.length, ORDER_COUNT)
 assert.ok(ORDER_COUNT >= 10_000)

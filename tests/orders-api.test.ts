@@ -8,18 +8,19 @@ import {
   vi,
 } from "vitest"
 import { setupServer } from "msw/node"
-import { orders } from "../src/features/orders/data"
+import { orders } from "../src/mocks/orders/data"
 import type {
   ApiErrorResponse,
   OrderListResponse,
-} from "../src/features/orders/api-types"
-import type { Order } from "../src/features/orders/types"
+} from "../src/features/orders/order-api.types"
+import type { Order } from "../src/features/orders/order.types"
 import {
   createOrderHandlers,
   MAX_LATENCY_MS,
   MIN_LATENCY_MS,
-} from "../src/mocks/handlers"
-import { parseOrderQuery, queryOrders } from "../src/mocks/orders-query"
+} from "../src/mocks/orders/handlers"
+import { parseOrderQuery } from "../src/features/orders/schemas/order-query.schema"
+import { queryOrders } from "../src/mocks/orders/query-orders"
 
 const random = vi.fn(() => 0.5)
 const wait = vi.fn(async (_milliseconds: number) => {})
