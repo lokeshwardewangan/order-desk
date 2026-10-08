@@ -1,7 +1,10 @@
+import { orders } from "../src/mocks/orders/data"
+import { queryOrders } from "../src/mocks/orders/query-orders"
+import { parseOrderQuery } from "../src/features/orders/schemas/order-query.schema"
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest"
-import { afterAll, afterEach, beforeAll, expect, test } from "vitest"
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest"
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom"
@@ -15,6 +18,7 @@ const server = setupServer(
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }))
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
   server.resetHandlers()
 })
 afterAll(() => server.close())
@@ -137,3 +141,64 @@ test("applying filters preserves the search input and its focus", async () => {
   expect(screen.getByLabelText("Search orders")).toBe(input)
   expect(input).toHaveFocus()
 })
+
+test.each([false, true])(
+  "a late previous response cannot replace current results (failure: %s)",
+  async (fails) => {
+    let previousSignal: AbortSignal | undefined
+    const originalFetch = globalThis.fetch
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input).includes("q=ORD-00001"))
+        previousSignal = init?.signal ?? undefined
+      return originalFetch(input, init)
+    })
+    let releasePrevious!: () => void
+    let finishPrevious!: () => void
+    const previousFinished = new Promise<void>((resolve) => {
+      finishPrevious = resolve
+    })
+    server.use(
+      http.get("*/api/orders", async ({ request }) => {
+        const query = parseOrderQuery(new URL(request.url).searchParams)
+        if (query.q === "ORD-00001") {
+          await new Promise<void>((resolve) => {
+            releasePrevious = resolve
+          })
+          finishPrevious()
+          if (fails)
+            return HttpResponse.json(
+              {
+                error: {
+                  code: "TEMPORARY_FAILURE",
+                  message: "Old request failed",
+                },
+              },
+              { status: 503 },
+            )
+        }
+        return HttpResponse.json(queryOrders(orders, query))
+      }),
+    )
+    const user = userEvent.setup()
+    mount()
+    const input = screen.getByLabelText("Search orders")
+    await user.type(input, "ORD-00001")
+    await waitFor(() => expect(releasePrevious).toBeDefined())
+    await user.clear(input)
+    await user.type(input, "ORD-00002")
+    await waitFor(() =>
+      expect(screen.getByLabelText("Current URL")).toHaveTextContent(
+        "q=ORD-00002",
+      ),
+    )
+    await screen.findByText("ORD-00002")
+    await waitFor(() => expect(previousSignal?.aborted).toBe(true))
+    await act(async () => {
+      releasePrevious()
+      await previousFinished
+    })
+    expect(screen.getByText("ORD-00002")).toBeInTheDocument()
+    expect(screen.queryByText("ORD-00001")).not.toBeInTheDocument()
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  },
+)

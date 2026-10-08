@@ -13,10 +13,8 @@ export function OrderFilters({
   state: OrderViewState
   onChange: (changes: Partial<OrderViewState>) => void
 }) {
-  const { field, apply, preset, errors, activeFilters } = useOrderFilters(
-    state,
-    onChange,
-  )
+  const { field, apply, preset, errors, activeFilters, searchPending } =
+    useOrderFilters(state, onChange)
   return (
     <form
       onSubmit={apply}
@@ -53,8 +51,18 @@ export function OrderFilters({
             placeholder="Order ID, customer name, or email"
             className="h-10 pl-9"
             {...field("q")}
+            aria-describedby="search-help"
           />
         </div>
+        <p
+          id="search-help"
+          role="status"
+          className="text-xs text-muted-foreground"
+        >
+          {searchPending
+            ? "Waiting to search…"
+            : "Search updates as you type. Use Apply filters for status, dates, and amounts."}
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-2">

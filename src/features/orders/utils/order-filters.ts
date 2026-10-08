@@ -38,9 +38,6 @@ export function draftFrom(query: OrderListQuery): FilterDraft {
         : String(query.maxAmountPaise / 100),
   }
 }
-export function filterDraftKey(query: OrderListQuery) {
-  return JSON.stringify(draftFrom(query))
-}
 export function parseFilterDraft(draft: FilterDraft, current: OrderListQuery) {
   const params = orderListSearchParams(current)
   const errors: Record<string, string> = {}

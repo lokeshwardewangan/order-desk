@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 import { useSearchParams } from "react-router-dom"
 import {
   orderViewSearchParams,
@@ -15,12 +15,15 @@ export function useOrderView() {
   useEffect(() => {
     if (search !== canonical) setParams(canonical, { replace: true })
   }, [search, canonical, setParams])
-  function update(changes: Partial<OrderViewState>) {
-    setParams((current) =>
-      orderViewSearchParams(
-        updateOrderViewState(readOrderViewState(current), changes),
-      ),
-    )
-  }
+  const update = useCallback(
+    (changes: Partial<OrderViewState>) => {
+      setParams((current) =>
+        orderViewSearchParams(
+          updateOrderViewState(readOrderViewState(current), changes),
+        ),
+      )
+    },
+    [setParams],
+  )
   return { state, update }
 }
