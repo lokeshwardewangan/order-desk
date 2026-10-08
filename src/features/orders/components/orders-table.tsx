@@ -12,30 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { OrderListResponse, OrderSort } from "../order-api.types"
-import type { OrderStatus, OrderSummary } from "../order.types"
-
-const statusLabels: Record<OrderStatus, string> = {
-  processing: "Processing",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-}
-const statusStyles: Record<OrderStatus, string> = {
-  processing: "border-amber-200 bg-amber-50 text-amber-800",
-  shipped: "border-blue-200 bg-blue-50 text-blue-800",
-  delivered: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  cancelled: "border-border bg-muted text-muted-foreground",
-}
-const currency = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-})
-const date = new Intl.DateTimeFormat("en-IN", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  timeZone: "Asia/Kolkata",
-})
+import { SheetTrigger } from "@/components/ui/sheet"
+import { OrderStatusBadge } from "./order-status-badge"
+import { formatAmount, formatOrderDate } from "../utils/order-format"
+import type { OrderSummary } from "../order.types"
 
 export function OrdersTable({
   result,
@@ -44,6 +24,7 @@ export function OrdersTable({
   onPage,
   savedScroll,
   onScrollChange,
+  onOpenOrder,
 }: {
   result: OrderListResponse
   sort: OrderSort
@@ -51,6 +32,7 @@ export function OrdersTable({
   onPage: (page: number) => void
   savedScroll: number
   onScrollChange: (scroll: number) => void
+  onOpenOrder?: (id: string, scroll: number) => void
 }) {
   const orders: OrderSummary[] = result.data
   const { total, page, totalPages, pageSize } = result
@@ -62,6 +44,7 @@ export function OrdersTable({
     paddingBottom,
     handleScroll,
     handleKeyDown,
+    captureScroll,
   } = useVirtualOrders(orders, savedScroll, onScrollChange)
   return (
     <section aria-labelledby="order-results-heading">
@@ -225,35 +208,37 @@ export function OrdersTable({
                 </TableCell>
                 <TableCell className="py-4 text-muted-foreground">
                   <time dateTime={order.placedAt}>
-                    {date.format(new Date(order.placedAt))}
+                    {formatOrderDate(order.placedAt)}
                   </time>
                 </TableCell>
                 <TableCell className="py-4">
-                  <Badge
-                    variant="outline"
-                    className={"h-6 gap-1.5 " + statusStyles[order.status]}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-1.5 rounded-full bg-current"
-                    />
-                    {statusLabels[order.status]}
-                  </Badge>
+                  <OrderStatusBadge status={order.status} />
                 </TableCell>
                 <TableCell className="py-4 text-right font-medium tabular-nums">
-                  {currency.format(order.totalAmountPaise / 100)}
+                  {formatAmount(order.totalAmountPaise)}
                 </TableCell>
                 <TableCell className="py-4 pr-4 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={"View order " + order.id}
-                    disabled
-                  >
-                    View
-                    <ChevronRight aria-hidden="true" />
-                  </Button>
+                  {onOpenOrder ? (
+                    <SheetTrigger
+                      id={"view-" + order.id}
+                      aria-label={"View order " + order.id}
+                      onClick={() => onOpenOrder(order.id, captureScroll())}
+                      render={<Button variant="ghost" size="sm" />}
+                    >
+                      View
+                      <ChevronRight aria-hidden="true" />
+                    </SheetTrigger>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled
+                      aria-label={"View order " + order.id}
+                    >
+                      View
+                      <ChevronRight aria-hidden="true" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )

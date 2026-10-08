@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+import { orders } from "../src/mocks/orders/data"
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest"
 import { http, HttpResponse } from "msw"
 import { setupServer } from "msw/node"
 import {
   fetchOrders,
+  fetchOrder,
   OrdersApiError,
 } from "../src/features/orders/services/orders-api"
 import { parseOrderQuery } from "../src/features/orders/schemas/order-query.schema"
@@ -84,4 +86,24 @@ test("preserves request cancellation", async () => {
   await expect(fetchOrders(query(), controller.signal)).rejects.toMatchObject({
     name: "AbortError",
   })
+})
+
+test("validates complete order details", async () => {
+  expect(await fetchOrder("ORD-00001", new AbortController().signal)).toEqual({
+    data: orders[0],
+  })
+})
+test.each([
+  { ...orders[0], totalAmountPaise: orders[0].totalAmountPaise + 1 },
+  { ...orders[0], id: "ORD-00002" },
+  { ...orders[0], shippingAddress: undefined },
+])("rejects inconsistent or incomplete details", async (order) => {
+  server.use(
+    http.get("*/api/orders/ORD-00001", () =>
+      HttpResponse.json({ data: order }),
+    ),
+  )
+  await expect(
+    fetchOrder("ORD-00001", new AbortController().signal),
+  ).rejects.toThrow("invalid response")
 })

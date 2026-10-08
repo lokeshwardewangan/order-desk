@@ -13,6 +13,10 @@ export function useVirtualOrders(
   onScrollChange: (scroll: number) => void,
 ) {
   const viewportRef = useRef<HTMLDivElement>(null)
+  const onScrollChangeRef = useRef(onScrollChange)
+  useLayoutEffect(() => {
+    onScrollChangeRef.current = onScrollChange
+  }, [onScrollChange])
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const viewportHeight = Math.min(
     MAX_VIEWPORT_HEIGHT,
@@ -49,7 +53,17 @@ export function useVirtualOrders(
   function handleScroll(event: UIEvent<HTMLDivElement>) {
     const scroll = Math.max(0, Math.round(event.currentTarget.scrollTop))
     window.clearTimeout(saveTimer.current)
-    saveTimer.current = window.setTimeout(() => onScrollChange(scroll), 150)
+    saveTimer.current = window.setTimeout(
+      () => onScrollChangeRef.current(scroll),
+      150,
+    )
+  }
+  function captureScroll() {
+    window.clearTimeout(saveTimer.current)
+    return Math.max(
+      0,
+      Math.round(viewportRef.current?.scrollTop ?? savedScroll),
+    )
   }
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return
@@ -86,5 +100,6 @@ export function useVirtualOrders(
       : 0,
     handleScroll,
     handleKeyDown,
+    captureScroll,
   }
 }

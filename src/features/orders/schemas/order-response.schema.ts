@@ -36,3 +36,41 @@ export const apiErrorResponseSchema = z.object({
     fields: z.record(z.string(), z.string()).optional(),
   }),
 })
+
+export const orderItemSchema = z.object({
+  sku: z.string().min(1),
+  name: z.string().min(1),
+  quantity: nonnegativeInteger.min(1),
+  unitPricePaise: nonnegativeInteger,
+})
+export const shippingAddressSchema = z.object({
+  line1: z.string().min(1),
+  city: z.string().min(1),
+  state: z.string().min(1),
+  postalCode: z.string().regex(/^\d{6}$/),
+  country: z.literal("India"),
+})
+export const orderTimelineEventSchema = z.object({
+  status: z.enum(["placed", ...ORDER_STATUSES]),
+  occurredAt: z.iso.datetime(),
+})
+export const orderSchema = orderSummarySchema
+  .extend({
+    items: z.array(orderItemSchema).min(1),
+    shippingAddress: shippingAddressSchema,
+    timeline: z.array(orderTimelineEventSchema).min(1),
+  })
+  .superRefine((order, context) => {
+    const total = order.items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPricePaise,
+      0,
+    )
+    const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0)
+    if (
+      !Number.isSafeInteger(total) ||
+      total !== order.totalAmountPaise ||
+      quantity !== order.itemCount
+    )
+      context.addIssue({ code: "custom", message: "Inconsistent order totals" })
+  })
+export const orderDetailResponseSchema = z.object({ data: orderSchema })
