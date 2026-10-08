@@ -14,7 +14,8 @@
     "prepare": "husky",
     "check:data": "bun scripts/check-orders.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "benchmark:orders": "bun scripts/benchmark-orders.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

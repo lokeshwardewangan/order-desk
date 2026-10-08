@@ -34,43 +34,46 @@ export function queryOrders(
   const fromTime = query.from ? dateBoundary(query.from) : -Infinity
   const toTime = query.to ? dateBoundary(query.to, true) : Infinity
 
-  const matches = source.filter((order) => {
-    if (
-      search &&
-      ![order.id, order.customer.name, order.customer.email].some((value) =>
-        value.toLowerCase().includes(search),
+  const matches = source
+    .map((order) => ({ order, time: Date.parse(order.placedAt) }))
+    .filter(({ order, time }) => {
+      if (
+        search &&
+        ![order.id, order.customer.name, order.customer.email].some((value) =>
+          value.toLowerCase().includes(search),
+        )
       )
-    )
-      return false
-    if (query.status && order.status !== query.status) return false
-    const time = Date.parse(order.placedAt)
-    if (time < fromTime || time > toTime) return false
-    if (
-      query.minAmountPaise !== undefined &&
-      order.totalAmountPaise < query.minAmountPaise
-    )
-      return false
-    if (
-      query.maxAmountPaise !== undefined &&
-      order.totalAmountPaise > query.maxAmountPaise
-    )
-      return false
-    return true
-  })
+        return false
+      if (query.status && order.status !== query.status) return false
+      if (time < fromTime || time > toTime) return false
+      if (
+        query.minAmountPaise !== undefined &&
+        order.totalAmountPaise < query.minAmountPaise
+      )
+        return false
+      if (
+        query.maxAmountPaise !== undefined &&
+        order.totalAmountPaise > query.maxAmountPaise
+      )
+        return false
+      return true
+    })
 
   matches.sort((a, b) => {
     const difference = query.sort.startsWith("date")
-      ? Date.parse(a.placedAt) - Date.parse(b.placedAt)
-      : a.totalAmountPaise - b.totalAmountPaise
+      ? a.time - b.time
+      : a.order.totalAmountPaise - b.order.totalAmountPaise
     return (
       (query.sort.endsWith("desc") ? -difference : difference) ||
-      a.id.localeCompare(b.id)
+      a.order.id.localeCompare(b.order.id)
     )
   })
 
   const start = (query.page - 1) * query.pageSize
   return {
-    data: matches.slice(start, start + query.pageSize).map(summary),
+    data: matches
+      .slice(start, start + query.pageSize)
+      .map(({ order }) => summary(order)),
     total: matches.length,
     page: query.page,
     pageSize: query.pageSize,
