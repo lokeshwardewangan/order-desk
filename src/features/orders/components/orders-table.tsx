@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { OrderListResponse, OrderSort } from "../api-types"
 import type { OrderStatus, OrderSummary } from "../types"
 
 const statusLabels: Record<OrderStatus, string> = {
@@ -35,7 +36,19 @@ const date = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
 })
 
-export function OrdersTable({ orders }: { orders: OrderSummary[] }) {
+export function OrdersTable({
+  result,
+  sort,
+  onSort,
+  onPage,
+}: {
+  result: OrderListResponse
+  sort: OrderSort
+  onSort: (sort: OrderSort) => void
+  onPage: (page: number) => void
+}) {
+  const orders: OrderSummary[] = result.data
+  const { total, page, totalPages, pageSize } = result
   return (
     <section aria-labelledby="order-results-heading">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6">
@@ -43,13 +56,17 @@ export function OrdersTable({ orders }: { orders: OrderSummary[] }) {
           <h2 id="order-results-heading" className="text-sm font-semibold">
             Order results
           </h2>
-          <Badge variant="secondary">{orders.length} sample orders</Badge>
+          <Badge variant="secondary">
+            {total.toLocaleString("en-IN")} orders
+          </Badge>
         </div>
-        <span className="text-xs text-muted-foreground">Newest first</span>
+        <span className="text-xs text-muted-foreground">
+          {sort.replace("-", " · ")}
+        </span>
       </div>
       <Table className="min-w-[760px]">
         <TableCaption className="sr-only">
-          Sample orders for the layout preview
+          Customer orders matching the current filters
         </TableCaption>
         <TableHeader className="bg-muted/40">
           <TableRow className="hover:bg-transparent">
@@ -57,26 +74,49 @@ export function OrdersTable({ orders }: { orders: OrderSummary[] }) {
               Order ID
             </TableHead>
             <TableHead scope="col">Customer</TableHead>
-            <TableHead scope="col" aria-sort="descending">
+            <TableHead
+              scope="col"
+              aria-sort={
+                sort.startsWith("date")
+                  ? sort.endsWith("asc")
+                    ? "ascending"
+                    : "descending"
+                  : "none"
+              }
+            >
               <Button
                 variant="ghost"
                 size="sm"
                 className="-ml-2"
                 aria-label="Sort by order date"
-                disabled
+                onClick={() =>
+                  onSort(sort === "date-desc" ? "date-asc" : "date-desc")
+                }
               >
                 Order date
-                <ArrowDown aria-hidden="true" />
+                <ArrowUpDown aria-hidden="true" />
               </Button>
             </TableHead>
             <TableHead scope="col">Status</TableHead>
-            <TableHead scope="col" className="text-right">
+            <TableHead
+              scope="col"
+              className="text-right"
+              aria-sort={
+                sort.startsWith("amount")
+                  ? sort.endsWith("asc")
+                    ? "ascending"
+                    : "descending"
+                  : "none"
+              }
+            >
               <Button
                 variant="ghost"
                 size="sm"
                 className="-mr-2"
                 aria-label="Sort by order amount"
-                disabled
+                onClick={() =>
+                  onSort(sort === "amount-desc" ? "amount-asc" : "amount-desc")
+                }
               >
                 Total
                 <ArrowUpDown aria-hidden="true" />
@@ -88,6 +128,22 @@ export function OrdersTable({ orders }: { orders: OrderSummary[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {!orders.length && (
+            <TableRow>
+              <TableCell colSpan={6} className="py-12 text-center">
+                {total ? (
+                  <>
+                    This page has no orders.{" "}
+                    <Button variant="link" onClick={() => onPage(1)}>
+                      Go to first page
+                    </Button>
+                  </>
+                ) : (
+                  "No orders match these filters. Try changing or clearing them."
+                )}
+              </TableCell>
+            </TableRow>
+          )}
           {orders.map((order) => (
             <TableRow key={order.id}>
               <TableCell className="py-4 pl-6 font-medium tabular-nums">
@@ -136,19 +192,37 @@ export function OrdersTable({ orders }: { orders: OrderSummary[] }) {
         </TableBody>
       </Table>
       <div className="flex flex-wrap items-center justify-between gap-4 border-t px-5 py-4 sm:px-6">
-        <p className="text-xs text-muted-foreground">
-          Showing {orders.length ? "1–" + orders.length : "0"} of{" "}
-          {orders.length} sample orders
+        <p role="status" className="text-xs text-muted-foreground">
+          Showing{" "}
+          {orders.length
+            ? (page - 1) * pageSize +
+              1 +
+              "–" +
+              ((page - 1) * pageSize + orders.length)
+            : "0"}{" "}
+          of {total.toLocaleString("en-IN")} orders
         </p>
         <nav aria-label="Order pagination" className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => onPage(page - 1)}
+          >
             <ChevronLeft aria-hidden="true" />
             Previous
           </Button>
           <span className="px-2 text-xs text-muted-foreground">
-            Page 1 of 1
+            Page {page} of {Math.max(1, totalPages)}
           </span>
-          <Button type="button" variant="outline" size="sm" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => onPage(page + 1)}
+          >
             Next
             <ChevronRight aria-hidden="true" />
           </Button>

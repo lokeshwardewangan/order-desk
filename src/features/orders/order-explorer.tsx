@@ -1,11 +1,30 @@
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { fetchOrders } from "./api"
+import { useOrderView } from "./use-order-view"
+import { orderListSearchParams } from "./url-state"
 import { Box, Eye, Link } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { OrderFilters } from "./components/order-filters"
 import { OrdersTable } from "./components/orders-table"
-import { previewOrders } from "./preview-orders"
 
 export function OrderExplorer() {
+  const { state, update } = useOrderView()
+  const [copyStatus, setCopyStatus] = useState("")
+  const query = useQuery({
+    queryKey: ["orders", orderListSearchParams(state).toString()],
+    queryFn: ({ signal }) => fetchOrders(state, signal),
+    retry: false,
+  })
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyStatus("View link copied")
+    } catch {
+      setCopyStatus("Unable to copy. Copy the URL from your address bar.")
+    }
+  }
   return (
     <div className="min-h-screen bg-slate-50/70">
       <a
@@ -29,7 +48,7 @@ export function OrderExplorer() {
             className="h-7 gap-1.5 bg-background px-2.5 text-muted-foreground"
           >
             <Eye aria-hidden="true" />
-            Layout preview
+            Demo data
           </Badge>
         </div>
       </header>
@@ -53,19 +72,49 @@ export function OrderExplorer() {
             variant="outline"
             size="lg"
             className="mt-2 bg-background"
-            disabled
+            onClick={copyLink}
           >
             <Link aria-hidden="true" />
             Copy view link
           </Button>
         </div>
         <p className="mb-5 text-sm text-muted-foreground">
-          Sample orders are shown below. Filters and actions are unavailable in
-          this preview.
+          10,000 sample orders · Amounts in INR · Dates in India Standard Time
+        </p>
+        <p role="status" className="mb-3 text-sm text-muted-foreground">
+          {copyStatus}
         </p>
         <div className="overflow-hidden rounded-xl border bg-background shadow-xs">
-          <OrderFilters />
-          <OrdersTable orders={previewOrders} />
+          <OrderFilters
+            key={orderListSearchParams(state).toString()}
+            state={state}
+            onChange={update}
+          />
+          <section
+            aria-label="Order request status"
+            aria-busy={query.isFetching}
+          >
+            {query.isFetching ? (
+              <p
+                role="status"
+                className="p-12 text-center text-muted-foreground"
+              >
+                Loading orders…
+              </p>
+            ) : query.isError ? (
+              <div role="alert" className="space-y-3 p-10 text-center">
+                <p>Could not load orders. {query.error.message}</p>
+                <Button onClick={() => void query.refetch()}>Retry</Button>
+              </div>
+            ) : query.data ? (
+              <OrdersTable
+                result={query.data}
+                sort={state.sort}
+                onSort={(sort) => update({ sort })}
+                onPage={(page) => update({ page })}
+              />
+            ) : null}
+          </section>
         </div>
       </main>
     </div>

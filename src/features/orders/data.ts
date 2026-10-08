@@ -9,7 +9,8 @@ import type {
 
 export const ORDER_COUNT = 10_000
 export const DATASET_SEED = 42
-export const DATASET_REFERENCE_DATE = "2026-10-07T12:00:00.000Z"
+import { DATASET_REFERENCE_DATE } from "./sample-period"
+export { DATASET_REFERENCE_DATE } from "./sample-period"
 
 const HOUR = 60 * 60 * 1_000
 const DAY = 24 * HOUR
