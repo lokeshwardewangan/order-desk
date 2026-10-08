@@ -1,3 +1,4 @@
+import { useVirtualOrders } from "../hooks/use-virtual-orders"
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -41,14 +42,27 @@ export function OrdersTable({
   sort,
   onSort,
   onPage,
+  savedScroll,
+  onScrollChange,
 }: {
   result: OrderListResponse
   sort: OrderSort
   onSort: (sort: OrderSort) => void
   onPage: (page: number) => void
+  savedScroll: number
+  onScrollChange: (scroll: number) => void
 }) {
   const orders: OrderSummary[] = result.data
   const { total, page, totalPages, pageSize } = result
+  const {
+    viewportRef,
+    viewportHeight,
+    rows,
+    paddingTop,
+    paddingBottom,
+    handleScroll,
+    handleKeyDown,
+  } = useVirtualOrders(orders, savedScroll, onScrollChange)
   return (
     <section aria-labelledby="order-results-heading">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6">
@@ -64,12 +78,39 @@ export function OrdersTable({
           {sort.replace("-", " · ")}
         </span>
       </div>
-      <Table className="min-w-[760px]">
+      <p id="table-scroll-help" className="sr-only">
+        Focus the table region and use arrow keys, Page Up, Page Down, Home, or
+        End to scroll through orders. Use pagination to change pages.
+      </p>
+      <Table
+        className="min-w-[900px] table-fixed"
+        aria-rowcount={orders.length ? total + 1 : undefined}
+        containerProps={{
+          ref: viewportRef,
+          role: "region",
+          "aria-label": "Scrollable orders",
+          "aria-describedby": "table-scroll-help",
+          tabIndex: 0,
+          style: orders.length ? { height: viewportHeight } : undefined,
+          className:
+            "overflow-auto overscroll-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+          onScroll: handleScroll,
+          onKeyDown: handleKeyDown,
+        }}
+      >
+        <colgroup>
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "18%" }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "10%" }} />
+        </colgroup>
         <TableCaption className="sr-only">
           Customer orders matching the current filters
         </TableCaption>
-        <TableHeader className="bg-muted/40">
-          <TableRow className="hover:bg-transparent">
+        <TableHeader className="sticky top-0 z-10 bg-background">
+          <TableRow aria-rowindex={1} className="hover:bg-transparent">
             <TableHead scope="col" className="pl-6">
               Order ID
             </TableHead>
@@ -122,7 +163,7 @@ export function OrdersTable({
                 <ArrowUpDown aria-hidden="true" />
               </Button>
             </TableHead>
-            <TableHead scope="col" className="pr-6 text-right">
+            <TableHead scope="col" className="pr-4 text-right">
               Details
             </TableHead>
           </TableRow>
@@ -144,51 +185,91 @@ export function OrdersTable({
               </TableCell>
             </TableRow>
           )}
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="py-4 pl-6 font-medium tabular-nums">
-                {order.id}
-              </TableCell>
-              <TableCell className="py-4">
-                <div className="font-medium">{order.customer.name}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  {order.customer.email}
-                </div>
-              </TableCell>
-              <TableCell className="py-4 text-muted-foreground">
-                <time dateTime={order.placedAt}>
-                  {date.format(new Date(order.placedAt))}
-                </time>
-              </TableCell>
-              <TableCell className="py-4">
-                <Badge
-                  variant="outline"
-                  className={"h-6 gap-1.5 " + statusStyles[order.status]}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="size-1.5 rounded-full bg-current"
-                  />
-                  {statusLabels[order.status]}
-                </Badge>
-              </TableCell>
-              <TableCell className="py-4 text-right font-medium tabular-nums">
-                {currency.format(order.totalAmountPaise / 100)}
-              </TableCell>
-              <TableCell className="py-4 pr-6 text-right">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={"View order " + order.id}
-                  disabled
-                >
-                  View
-                  <ChevronRight aria-hidden="true" />
-                </Button>
-              </TableCell>
+          {paddingTop > 0 && (
+            <TableRow
+              aria-hidden="true"
+              className="border-0 hover:bg-transparent"
+            >
+              <TableCell
+                colSpan={6}
+                className="border-0 p-0"
+                style={{ height: paddingTop }}
+              />
             </TableRow>
-          ))}
+          )}
+          {rows.map((virtualRow) => {
+            const order = orders[virtualRow.index]
+            return (
+              <TableRow
+                key={order.id}
+                aria-rowindex={(page - 1) * pageSize + virtualRow.index + 2}
+                data-order-row={order.id}
+                style={{ height: virtualRow.size }}
+              >
+                <TableCell className="py-4 pl-6 font-medium tabular-nums">
+                  {order.id}
+                </TableCell>
+                <TableCell className="py-4">
+                  <div
+                    className="truncate font-medium"
+                    title={order.customer.name}
+                  >
+                    {order.customer.name}
+                  </div>
+                  <div
+                    className="mt-0.5 truncate text-xs text-muted-foreground"
+                    title={order.customer.email}
+                  >
+                    {order.customer.email}
+                  </div>
+                </TableCell>
+                <TableCell className="py-4 text-muted-foreground">
+                  <time dateTime={order.placedAt}>
+                    {date.format(new Date(order.placedAt))}
+                  </time>
+                </TableCell>
+                <TableCell className="py-4">
+                  <Badge
+                    variant="outline"
+                    className={"h-6 gap-1.5 " + statusStyles[order.status]}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-1.5 rounded-full bg-current"
+                    />
+                    {statusLabels[order.status]}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-4 text-right font-medium tabular-nums">
+                  {currency.format(order.totalAmountPaise / 100)}
+                </TableCell>
+                <TableCell className="py-4 pr-4 text-right">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={"View order " + order.id}
+                    disabled
+                  >
+                    View
+                    <ChevronRight aria-hidden="true" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+          {paddingBottom > 0 && (
+            <TableRow
+              aria-hidden="true"
+              className="border-0 hover:bg-transparent"
+            >
+              <TableCell
+                colSpan={6}
+                className="border-0 p-0"
+                style={{ height: paddingBottom }}
+              />
+            </TableRow>
+          )}
         </TableBody>
       </Table>
       <div className="flex flex-wrap items-center justify-between gap-4 border-t px-5 py-4 sm:px-6">

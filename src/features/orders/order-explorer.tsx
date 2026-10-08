@@ -1,3 +1,4 @@
+import { orderListSearchParams } from "./utils/order-url"
 import { useState } from "react"
 import { useOrders } from "./hooks/use-orders"
 import { useOrderView } from "./hooks/use-order-view"
@@ -98,6 +99,11 @@ export function OrderExplorer() {
               </div>
             ) : query.data ? (
               <OrdersTable
+                key={orderListSearchParams(state).toString()}
+                savedScroll={state.scroll}
+                onScrollChange={(scroll) =>
+                  update({ scroll }, { replace: true })
+                }
                 result={query.data}
                 sort={state.sort}
                 onSort={(sort) => update({ sort })}

@@ -16,11 +16,13 @@ export function useOrderView() {
     if (search !== canonical) setParams(canonical, { replace: true })
   }, [search, canonical, setParams])
   const update = useCallback(
-    (changes: Partial<OrderViewState>) => {
-      setParams((current) =>
-        orderViewSearchParams(
-          updateOrderViewState(readOrderViewState(current), changes),
-        ),
+    (changes: Partial<OrderViewState>, options?: { replace?: boolean }) => {
+      setParams(
+        (current) =>
+          orderViewSearchParams(
+            updateOrderViewState(readOrderViewState(current), changes),
+          ),
+        options,
       )
     },
     [setParams],

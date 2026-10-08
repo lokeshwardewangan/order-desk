@@ -1,10 +1,17 @@
+// @vitest-environment jsdom
 import { orders } from "../src/mocks/orders/data"
 import { queryOrders } from "../src/mocks/orders/query-orders"
 import { parseOrderQuery } from "../src/features/orders/schemas/order-query.schema"
-// @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest"
 import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest"
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom"
@@ -202,3 +209,42 @@ test.each([false, true])(
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   },
 )
+
+test("restores scroll from a shared URL and resets it on the next page", async () => {
+  mount("/orders?page=2&scroll=1520")
+  await screen.findByText("Page 2 of 100")
+  const viewport = screen.getByRole("region", { name: "Scrollable orders" })
+  expect(viewport.scrollTop).toBe(1520)
+  fireEvent.click(screen.getByRole("button", { name: "Next", exact: true }))
+  await screen.findByText("Page 3 of 100")
+  expect(
+    screen.getByRole("region", { name: "Scrollable orders" }).scrollTop,
+  ).toBe(0)
+  expect(screen.getByLabelText("Current URL")).not.toHaveTextContent("scroll=")
+})
+test("scroll updates replace history and do not request another page", async () => {
+  let requests = 0
+  server.use(
+    http.get("*/api/orders", ({ request }) => {
+      requests++
+      return HttpResponse.json(
+        queryOrders(orders, parseOrderQuery(new URL(request.url).searchParams)),
+      )
+    }),
+  )
+  mount()
+  await screen.findByText("Page 1 of 100")
+  fireEvent.click(screen.getByRole("button", { name: "Next", exact: true }))
+  await screen.findByText("Page 2 of 100")
+  fireEvent.scroll(screen.getByRole("region", { name: "Scrollable orders" }), {
+    target: { scrollTop: 1520 },
+  })
+  await waitFor(() =>
+    expect(screen.getByLabelText("Current URL")).toHaveTextContent(
+      "scroll=1520",
+    ),
+  )
+  expect(requests).toBe(2)
+  fireEvent.click(screen.getByRole("button", { name: "Back", exact: true }))
+  await screen.findByText("Page 1 of 100")
+})
