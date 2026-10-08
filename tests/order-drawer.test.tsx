@@ -178,7 +178,9 @@ test("traps keyboard focus inside the drawer", async () => {
   )
   await user.tab()
   await waitFor(() =>
-    expect(dialog.contains(document.activeElement)).toBe(true),
+    expect(
+      within(dialog).getByRole("region", { name: "Order details content" }),
+    ).toHaveFocus(),
   )
   await user.tab()
   await waitFor(() =>

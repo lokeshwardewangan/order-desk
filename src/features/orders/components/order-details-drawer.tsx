@@ -72,8 +72,11 @@ export function OrderDetailsDrawer({
           </SheetClose>
         </SheetHeader>
         <div
+          role="region"
+          aria-label="Order details content"
+          tabIndex={0}
           aria-busy={query.isFetching}
-          className="min-h-0 flex-1 overflow-y-auto p-6"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >
           {query.isFetching ? (
             <p

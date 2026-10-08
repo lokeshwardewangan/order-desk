@@ -17,6 +17,7 @@ export function useVirtualOrders(
   useLayoutEffect(() => {
     onScrollChangeRef.current = onScrollChange
   }, [onScrollChange])
+  const pendingFocus = useRef<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const viewportHeight = Math.min(
     MAX_VIEWPORT_HEIGHT,
@@ -66,6 +67,27 @@ export function useVirtualOrders(
     )
   }
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Tab" && event.target instanceof HTMLElement) {
+      const row = event.target.closest<HTMLElement>("[data-order-row]")
+      const index = orders.findIndex(
+        (order) => order.id === row?.dataset.orderRow,
+      )
+      const nextIndex = index + (event.shiftKey ? -1 : 1)
+      if (index >= 0 && nextIndex >= 0 && nextIndex < orders.length) {
+        event.preventDefault()
+        const id = orders[nextIndex].id
+        pendingFocus.current = id
+        virtualizer.scrollToIndex(nextIndex, { align: "auto" })
+        const button = viewportRef.current?.querySelector<HTMLButtonElement>(
+          '[data-order-row="' + id + '"] button',
+        )
+        if (button) {
+          button.focus({ preventScroll: true })
+          pendingFocus.current = null
+        }
+      }
+      return
+    }
     if (event.target !== event.currentTarget) return
     const offsets: Record<string, number> = {
       ArrowDown: ROW_HEIGHT,
@@ -90,6 +112,16 @@ export function useVirtualOrders(
     }
   }
   const rows = virtualizer.getVirtualItems()
+  useLayoutEffect(() => {
+    if (!pendingFocus.current) return
+    const button = viewportRef.current?.querySelector<HTMLButtonElement>(
+      '[data-order-row="' + pendingFocus.current + '"] button',
+    )
+    if (button) {
+      button.focus({ preventScroll: true })
+      pendingFocus.current = null
+    }
+  }, [rows])
   return {
     viewportRef,
     viewportHeight,

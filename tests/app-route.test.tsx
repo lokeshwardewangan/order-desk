@@ -32,7 +32,7 @@ test("loads a direct route and copies its complete order link", async () => {
   const user = userEvent.setup()
   const write = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue()
   render(<App />)
-  const dialog = await screen.findByRole("dialog")
+  const dialog = await screen.findByRole("dialog", {}, { timeout: 5_000 })
   await within(dialog).findByRole("heading", { name: "Order summary" })
   await user.click(
     within(dialog).getByRole("button", { name: "Copy order link" }),

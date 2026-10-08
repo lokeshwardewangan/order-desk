@@ -76,7 +76,7 @@ export function OrdersTable({
           tabIndex: 0,
           style: orders.length ? { height: viewportHeight } : undefined,
           className:
-            "overflow-auto overscroll-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+            "overflow-auto overscroll-contain [overflow-anchor:none] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
           onScroll: handleScroll,
           onKeyDown: handleKeyDown,
         }}
@@ -268,7 +268,10 @@ export function OrdersTable({
             : "0"}{" "}
           of {total.toLocaleString("en-IN")} orders
         </p>
-        <nav aria-label="Order pagination" className="flex items-center gap-2">
+        <nav
+          aria-label="Order pagination"
+          className="flex flex-wrap items-center gap-2"
+        >
           <Button
             type="button"
             variant="outline"
@@ -279,7 +282,7 @@ export function OrdersTable({
             <ChevronLeft aria-hidden="true" />
             Previous
           </Button>
-          <span className="px-2 text-xs text-muted-foreground">
+          <span className="px-2 text-xs whitespace-nowrap text-muted-foreground">
             Page {page} of {Math.max(1, totalPages)}
           </span>
           <Button

@@ -8,6 +8,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { Sheet } from "../src/components/ui/sheet"
 import { OrdersTable } from "../src/features/orders/components/orders-table"
 import { queryOrders } from "../src/mocks/orders/query-orders"
 import { orders } from "../src/mocks/orders/data"
@@ -105,4 +107,75 @@ test("restores a changed saved offset on the same page", async () => {
   )
   await screen.findByText(result.data[500].id)
   expect(viewport.scrollTop).toBe(38000)
+})
+
+test("Tab reaches rows outside the initial virtual window and Shift+Tab returns", async () => {
+  const user = userEvent.setup()
+  render(
+    <Sheet open={false}>
+      <OrdersTable
+        result={result}
+        sort="date-desc"
+        onSort={vi.fn()}
+        onPage={vi.fn()}
+        savedScroll={0}
+        onScrollChange={vi.fn()}
+        onOpenOrder={vi.fn()}
+      />
+    </Sheet>,
+  )
+  screen
+    .getByRole("button", { name: "View order " + result.data[0].id })
+    .focus()
+  for (let index = 1; index <= 15; index++) {
+    await user.tab()
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "View order " + result.data[index].id,
+        }),
+      ).toHaveFocus(),
+    )
+  }
+  for (let index = 14; index >= 0; index--) {
+    await user.tab({ shift: true })
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "View order " + result.data[index].id,
+        }),
+      ).toHaveFocus(),
+    )
+  }
+  expect(document.querySelectorAll("[data-order-row]").length).toBeLessThan(25)
+  await user.tab({ shift: true })
+  expect(
+    screen.getByRole("button", { name: "Sort by order amount" }),
+  ).toHaveFocus()
+})
+
+test("Tab leaves the final virtual row for pagination", async () => {
+  const user = userEvent.setup()
+  render(
+    <Sheet open={false}>
+      <OrdersTable
+        result={result}
+        sort="date-desc"
+        onSort={vi.fn()}
+        onPage={vi.fn()}
+        savedScroll={0}
+        onScrollChange={vi.fn()}
+        onOpenOrder={vi.fn()}
+      />
+    </Sheet>,
+  )
+  fireEvent.keyDown(screen.getByRole("region", { name: "Scrollable orders" }), {
+    key: "End",
+  })
+  const last = await screen.findByRole("button", {
+    name: "View order " + result.data[999].id,
+  })
+  last.focus()
+  await user.tab()
+  expect(screen.getByRole("button", { name: "Next" })).toHaveFocus()
 })
