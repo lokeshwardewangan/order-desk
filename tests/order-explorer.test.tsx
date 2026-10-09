@@ -248,3 +248,38 @@ test("scroll updates replace history and do not request another page", async () 
   fireEvent.click(screen.getByRole("button", { name: "Back", exact: true }))
   await screen.findByText("Page 1 of 100")
 })
+
+test("collapsed range filters retain drafts and reopen on validation errors", async () => {
+  const user = userEvent.setup()
+  mount()
+  await screen.findByText("Page 1 of 100")
+  const toggle = screen.getByRole("button", { name: "Date & amount filters" })
+  await user.click(toggle)
+  expect(toggle).toHaveAttribute("aria-expanded", "true")
+  await user.type(screen.getByLabelText("Min amount (₹)"), "100")
+  await user.type(screen.getByLabelText("Max amount (₹)"), "50")
+  await user.click(toggle)
+  expect(toggle).toHaveAttribute("aria-expanded", "false")
+  await user.click(screen.getByRole("button", { name: "Apply filters" }))
+  expect(toggle).toHaveAttribute("aria-expanded", "true")
+  expect(screen.getByLabelText("Min amount (₹)")).toHaveValue(100)
+  expect(screen.getByLabelText("Max amount (₹)")).toHaveFocus()
+  expect(screen.getByLabelText("Current URL").textContent).toBe("")
+})
+
+test("preset selection follows applied URL criteria and clears for a custom view", async () => {
+  mount("/orders?status=processing&page=2")
+  const processing = screen.getByRole("button", {
+    name: "Processing",
+    exact: true,
+  })
+  expect(processing).toHaveAttribute("aria-pressed", "true")
+  expect(
+    screen.getByRole("button", { name: "All orders", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false")
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Search orders"), "ORD-00001{Enter}")
+  await waitFor(() =>
+    expect(processing).toHaveAttribute("aria-pressed", "false"),
+  )
+})

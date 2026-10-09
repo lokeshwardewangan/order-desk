@@ -13,6 +13,7 @@ import {
 import { useOrderDetails } from "../hooks/use-order-details"
 import { OrdersApiError } from "../services/orders-api"
 import { OrderDetails } from "./order-details"
+import { OrderLoading } from "./order-loading"
 export function OrderDetailsDrawer({
   orderId,
   onClose,
@@ -50,7 +51,7 @@ export function OrderDetailsDrawer({
         showCloseButton={false}
         className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
       >
-        <SheetHeader className="relative border-b p-6 pr-16">
+        <SheetHeader className="relative border-b bg-muted/60 p-6 pr-16">
           <SheetTitle className="text-xl font-semibold">
             Order {orderId ?? lastOrderId}
           </SheetTitle>
@@ -64,7 +65,7 @@ export function OrderDetailsDrawer({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Close order details"
-                className="absolute top-5 right-5"
+                className="absolute top-5 right-5 size-9"
               />
             }
           >
@@ -79,14 +80,12 @@ export function OrderDetailsDrawer({
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >
           {query.isFetching ? (
-            <p
-              role="status"
-              className="py-10 text-center text-muted-foreground"
-            >
-              Loading order details…
-            </p>
+            <OrderLoading detail />
           ) : query.isError ? (
-            <div role="alert" className="space-y-3 rounded-lg border p-5">
+            <div
+              role="alert"
+              className="space-y-3 border-l-2 border-destructive bg-muted/60 p-5"
+            >
               <h3 className="font-semibold">
                 {missing ? "Order not found" : "Could not load order details"}
               </h3>
@@ -124,11 +123,14 @@ function OrderLink() {
   }
   return (
     <>
-      <Button variant="outline" onClick={copy}>
+      <Button variant="outline" className="h-9" onClick={copy}>
         <Link aria-hidden="true" />
         Copy order link
       </Button>
-      <p role="status" className="mt-2 text-xs text-muted-foreground">
+      <p
+        role="status"
+        className={message ? "mt-2 text-xs text-muted-foreground" : "sr-only"}
+      >
         {message}
       </p>
     </>

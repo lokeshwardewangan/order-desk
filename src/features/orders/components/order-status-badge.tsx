@@ -9,7 +9,10 @@ const styles: Record<OrderStatus, string> = {
 }
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return (
-    <Badge variant="outline" className={"h-6 gap-1.5 " + styles[status]}>
+    <Badge
+      variant="outline"
+      className={"h-6 gap-1.5 rounded-sm px-2 font-medium " + styles[status]}
+    >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {ORDER_STATUS_LABELS[status]}
     </Badge>

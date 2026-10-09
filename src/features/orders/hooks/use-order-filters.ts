@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import type { ChangeEvent, FormEvent } from "react"
 import type { OrderViewState } from "../utils/order-url"
 import { InvalidOrderQuery } from "../schemas/order-query.schema"
@@ -42,6 +42,11 @@ export function useOrderFilters(
     return () => window.clearTimeout(timeout)
   }, [draft.q, state.q, sourceKey, draftKey, isComposing, onChange])
 
+  useLayoutEffect(() => {
+    const first = Object.keys(errors)[0] as FilterKey | undefined
+    if (first) document.getElementById(FILTER_INPUT_IDS[first])?.focus()
+  }, [errors])
+
   function field(key: FilterKey) {
     return {
       value: draft[key],
@@ -67,8 +72,6 @@ export function useOrderFilters(
     } catch (error) {
       if (!(error instanceof InvalidOrderQuery)) throw error
       setErrors(error.fields)
-      const first = Object.keys(error.fields)[0] as FilterKey
-      document.getElementById(FILTER_INPUT_IDS[first])?.focus()
     }
   }
   function preset(view: OrderPreset) {
